@@ -1,0 +1,16 @@
+.venv/
+.idea/
+.uv-cache/
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.env
+.env.*
+!.env.example
+*.db
+*.db-*
+*.sqlite*
+data/
+Screenshot*.png
