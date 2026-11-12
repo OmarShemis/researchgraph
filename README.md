@@ -1,5 +1,7 @@
 # ResearchGraph
 
+[![Tests](https://github.com/OmarShemis/researchgraph/actions/workflows/tests.yml/badge.svg)](https://github.com/OmarShemis/researchgraph/actions/workflows/tests.yml)
+
 A command-line multi-agent research workflow built with LangGraph and LangChain. A local Ollama model plans research, searches through Tavily, reviews the findings, and writes a report. A local stdio MCP server exposes SQLite notes tools to the researcher.
 
 ## Workflow
@@ -44,3 +46,7 @@ Uses LangChain's first-party `MCPAdapter` with FastMCP 4. The previous separate 
 Tavily receives search queries. Prompts are local only with the default local model endpoint. Enabling optional tracing may send prompts and outputs to the tracing provider. Secrets, local databases, editor files and the original screenshot are excluded from Git.
 
 This is a learning/portfolio project. Source URLs are requested from the model but are not independently verified. Reports can contain errors; review evidence before relying on them. Offline tests do not prove live model or search quality. Model request timeouts and workflow limits reduce runaway execution but do not guarantee successful research.
+
+## Architecture and verification
+
+[Architecture](docs/architecture.md) · [MIT licence](LICENSE). Unit tests and CI are reproducible with the commands above. Live API/model quality requires separate evaluation.
