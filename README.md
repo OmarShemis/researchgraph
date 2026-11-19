@@ -1,3 +1,7 @@
+![ResearchGraph — A question becomes a research workflow.](assets/header.svg)
+
+[← Omar’s portfolio](https://github.com/OmarShemis) · [Architecture](docs/architecture.md) · [MIT license](LICENSE)
+
 # ResearchGraph
 
 [![Tests](https://github.com/OmarShemis/researchgraph/actions/workflows/tests.yml/badge.svg)](https://github.com/OmarShemis/researchgraph/actions/workflows/tests.yml)
@@ -50,3 +54,7 @@ This is a learning/portfolio project. Source URLs are requested from the model b
 ## Architecture and verification
 
 [Architecture](docs/architecture.md) · [MIT licence](LICENSE). Unit tests and CI are reproducible with the commands above. Live API/model quality requires separate evaluation.
+
+---
+
+Built by [Omar Shemis](https://github.com/OmarShemis) · [Explore more projects](https://github.com/OmarShemis?tab=repositories)
