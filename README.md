@@ -18,7 +18,7 @@ Ask a question. Gather evidence. Review the findings. Read the report.
 
 ## Overview
 
-ResearchGraph connects a local OpenAI-compatible language model to your existing MCP server. A LangGraph workflow plans the research, gathers evidence through Deep Agents, analyzes the findings, reviews their completeness, and writes a Markdown report in a Streamlit chat interface.
+ResearchGraph connects a local LLM through an OpenAI-compatible endpoint to your existing MCP server. A LangGraph workflow plans the research, gathers evidence through Deep Agents, analyzes the findings, reviews their completeness, and writes a Markdown report in a Streamlit chat interface.
 
 The workflow can return to research when evidence is insufficient, with a two-round limit to keep the process bounded.
 
@@ -27,8 +27,8 @@ The workflow can return to research when evidence is insufficient, with a two-ro
 - **Chat interface** with Markdown reports, session history, follow-up questions, and a new-chat button.
 - **Five focused roles**: supervisor, researcher, analyst, fact checker, and report writer.
 - **Conditional review loop** that requests additional research before writing the report.
-- **External MCP tools** discovered from your running server, without copying tool implementations into the project.
-- **Local model support** through an OpenAI-compatible Chat Completions endpoint.
+- **MCP tools, including Tavily web search**, loaded from your existing MCP server. No separate Tavily integration is needed in ResearchGraph.
+- **Local LLM support** through an OpenAI-compatible Chat Completions endpoint.
 - **Workflow progress** showing completed stages while research runs.
 
 ## Workflow
@@ -45,13 +45,13 @@ flowchart TD
     Writer --> Finish([End])
 ```
 
-The researcher uses Deep Agents with the connected MCP tools. The other roles call the local model directly. The fact checker evaluates the supplied findings and citations; it does **not** independently browse or guarantee factual accuracy. Unresolved gaps should be disclosed in the final report.
+The researcher uses Deep Agents with the connected MCP tools. The other roles call the local LLM directly. The fact checker evaluates the supplied findings and citations; it does **not** independently browse or guarantee factual accuracy. Unresolved gaps should be disclosed in the final report.
 
 ## Quick start
 
 ### 1. Install
 
-Requirements: **Python 3.14+**, **uv**, a running local model server, and a running Streamable HTTP MCP server.
+Requirements: **Python 3.14+**, **uv**, a running local LLM server, and a running Streamable HTTP MCP server.
 
 ```powershell
 git clone https://github.com/OmarShemis/researchgraph.git
@@ -80,7 +80,7 @@ MCP_URL=http://localhost:8000/mcp
 | `LOCAL_API_KEY` | Authentication token if required; `local` is a placeholder for servers without authentication. |
 | `MCP_URL` | Streamable HTTP endpoint of your existing MCP server. |
 
-Start both services before opening the app. Credentials for tools such as Tavily belong in the MCP server's configuration. A cloud model API key is not required when using a local server without authentication.
+Start your local LLM and MCP server before opening the app. Tavily web search is already provided by the MCP server used with this project; ResearchGraph calls it through MCP. Keep its existing Tavily configuration on that server. No Tavily key or SDK setup is needed in ResearchGraph. A cloud model API key is not required when using a local LLM server without authentication.
 
 ### 3. Launch
 
@@ -99,7 +99,7 @@ researchgraph/
 ├── pyproject.toml
 ├── uv.lock
 └── src/researchgraph/
-    ├── config.py                    # Local model configuration
+    ├── config.py                    # Local LLM configuration
     ├── agents/
     │   ├── supervisor.py
     │   ├── researcher.py
@@ -121,7 +121,7 @@ Node functions live in `agents/`; the single graph file registers them and defin
 - Research is limited to two total rounds. Reaching the limit does not mean that every claim has been verified.
 - Model tool-calling quality and the MCP server's available tools affect results. Blocked pages and missing credentials can prevent source access.
 - All discovered MCP tools are available to the researcher. Their permissions and side effects are controlled by your MCP server; the application is not a sandbox or a human-approval enforcement layer.
-- A local model does not imply offline research: web tools can contact external services.
+- A local LLM does not imply offline research: web tools can contact external services.
 
 ## Troubleshooting
 
