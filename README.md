@@ -27,6 +27,8 @@ The workflow can return to research when evidence is insufficient, with a two-ro
 - **Chat interface** with Markdown reports, session history, follow-up questions, and a new-chat button.
 - **Five focused roles**: supervisor, researcher, analyst, fact checker, and report writer.
 - **Two Deep Agents** for research and independent source verification; direct LLM calls for planning, analysis, and writing.
+- **Evidence-backed findings** with claim IDs, source URLs, and supporting passages checked against actual webpage tool results.
+- **Incomplete-report labeling** when verification or citation checks fail.
 - **Conditional review loop** that requests additional research before writing the report.
 - **MCP tools, including Tavily web search**, loaded from your existing MCP server. No separate Tavily integration is needed in ResearchGraph.
 - **Local LLM support** through an OpenAI-compatible Chat Completions endpoint.
@@ -48,7 +50,7 @@ flowchart TD
 
 The **researcher and fact checker are separate Deep Agents** using the same local LLM. The researcher gathers evidence through MCP; the fact checker independently opens cited sources and searches for corroborating evidence. The supervisor, analyst, and report writer remain direct local LLM calls. Verification depends on source access and model behavior and does not guarantee factual accuracy. Unresolved gaps should be disclosed in the final report.
 
-The fact checker receives only the available `web_search`, `read_webpage`, and `read_pdf` MCP tools. It does not receive the MCP command, file-writing, deletion, or desktop-control tools.
+The fact checker receives only the available `web_search` and `read_webpage` MCP tools. It does not receive MCP tools for commands, file changes, deletion, or desktop control. This evidence gate currently supports web pages; PDF and desktop output cannot count as verified source evidence.
 
 ## Quick start
 
@@ -118,10 +120,29 @@ researchgraph/
 
 Node functions live in `agents/`; the single graph file registers them and defines the path from start to finish. MCP tools receive an `mcp_` prefix to avoid collisions with built-in Deep Agents tools. Their session stays open throughout each research run.
 
+## Evidence and verification
+
+1. The researcher returns structured claims with URLs and exact supporting passages.
+2. Code checks passages against successful webpage tool results from that run. Search snippets alone do not count.
+3. The fact checker independently reads sources and returns a verdict and specific correction for each claim ID.
+4. Approval requires evidence-backed findings, independent source reads, and no reported gaps.
+5. The writer receives verified findings only. Remaining gaps after the retry limit are labeled incomplete.
+
+The analyst's prose is not passed to the writer as verified evidence. A plausible-looking
+citation or an agent's statement that it checked a source is insufficient to pass the gate.
+
+Run the offline checks without model or external tool calls:
+
+```powershell
+uv run python -m unittest discover -s tests -v
+```
+
 ## Scope and limitations
 
 - Chat history lasts for the current Streamlit session. Checkpoints are in memory; each submitted question starts a fresh graph thread with prior conversation text supplied as context.
-- Research is limited to two total rounds. Reaching the limit does not mean that every claim has been verified.
+- Research is limited to two total rounds. Remaining gaps produce an **Incomplete report**, even when the workflow finishes normally.
+- Passage checks establish source access and quotation provenance, not semantic truth or comprehensive topic coverage.
+- The writer receives only verified findings. Drafts citing URLs outside the verified set are withheld; verified evidence and unresolved gaps are still shown.
 - Model tool-calling quality and the MCP server's available tools affect results. Blocked pages and missing credentials can prevent source access.
 - All discovered MCP tools are available to the researcher. Their permissions and side effects are controlled by your MCP server; the application is not a sandbox or a human-approval enforcement layer.
 - A local LLM does not imply offline research: web tools can contact external services.

@@ -12,8 +12,7 @@ from researchgraph.state.state import ResearchState
 
 
 def after_review(state):
-    approved = state["review"].strip().splitlines()[:1] == ["APPROVED"]
-    return "report_writer" if approved or state["rounds"] >= 2 else "researcher"
+    return "report_writer" if state["approved"] or state["rounds"] >= 2 else "researcher"
 
 
 def build_graph(model, tools):

@@ -53,6 +53,9 @@ if question := st.chat_input("What would you like to research?"):
                 status.update(label="Research failed", state="error")
                 st.error(f"{error}\n\nCheck that your local model and MCP servers are running.")
             else:
-                status.update(label="Research complete", state="complete", expanded=False)
+                status.update(
+                    label="Research finished - incomplete report" if report.startswith("# Incomplete report") else "Research complete",
+                    state="complete", expanded=False,
+                )
                 st.markdown(report)
                 st.session_state.messages.append({"role": "assistant", "content": report})
