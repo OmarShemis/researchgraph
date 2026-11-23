@@ -26,6 +26,7 @@ The workflow can return to research when evidence is insufficient, with a two-ro
 
 - **Chat interface** with Markdown reports, session history, follow-up questions, and a new-chat button.
 - **Five focused roles**: supervisor, researcher, analyst, fact checker, and report writer.
+- **Two Deep Agents** for research and independent source verification; direct LLM calls for planning, analysis, and writing.
 - **Conditional review loop** that requests additional research before writing the report.
 - **MCP tools, including Tavily web search**, loaded from your existing MCP server. No separate Tavily integration is needed in ResearchGraph.
 - **Local LLM support** through an OpenAI-compatible Chat Completions endpoint.
@@ -38,14 +39,16 @@ flowchart TD
     Start([Start]) --> Supervisor[Supervisor: plan]
     Supervisor --> Researcher[Researcher: gather evidence]
     Researcher --> Analyst[Analyst: assess findings]
-    Analyst --> Checker[Fact checker: review evidence]
+    Analyst --> Checker[Fact checker: verify sources]
     Checker --> Decision{Approved or two rounds reached?}
     Decision -- No: research with feedback --> Researcher
     Decision -- Yes --> Writer[Report writer]
     Writer --> Finish([End])
 ```
 
-The researcher uses Deep Agents with the connected MCP tools. The other roles call the local LLM directly. The fact checker evaluates the supplied findings and citations; it does **not** independently browse or guarantee factual accuracy. Unresolved gaps should be disclosed in the final report.
+The **researcher and fact checker are separate Deep Agents** using the same local LLM. The researcher gathers evidence through MCP; the fact checker independently opens cited sources and searches for corroborating evidence. The supervisor, analyst, and report writer remain direct local LLM calls. Verification depends on source access and model behavior and does not guarantee factual accuracy. Unresolved gaps should be disclosed in the final report.
+
+The fact checker receives only the available `web_search`, `read_webpage`, and `read_pdf` MCP tools. It does not receive the MCP command, file-writing, deletion, or desktop-control tools.
 
 ## Quick start
 
@@ -94,23 +97,23 @@ Open **http://localhost:8501**, enter a research question, and follow the stage 
 
 ```text
 researchgraph/
-├── streamlit_app.py                 # Chat UI and workflow execution
-├── .env.example                     # Local service configuration template
-├── pyproject.toml
-├── uv.lock
-└── src/researchgraph/
-    ├── config.py                    # Local LLM configuration
-    ├── agents/
-    │   ├── supervisor.py
-    │   ├── researcher.py
-    │   ├── analyst.py
-    │   ├── fact_checker.py
-    │   └── report_writer.py
-    ├── graphs/rgraph.py              # Nodes, edges, and conditional routing
-    ├── integrations/mcp_client.py    # External MCP connection
-    ├── prompts/system_prompts.py
-    ├── state/state.py               # Shared workflow state
-    └── memory/store.py               # In-memory checkpoints
+â”œâ”€â”€ streamlit_app.py                 # Chat UI and workflow execution
+â”œâ”€â”€ .env.example                     # Local service configuration template
+â”œâ”€â”€ pyproject.toml
+â”œâ”€â”€ uv.lock
+â””â”€â”€ src/researchgraph/
+    â”œâ”€â”€ config.py                    # Local LLM configuration
+    â”œâ”€â”€ agents/
+    â”‚   â”œâ”€â”€ supervisor.py
+    â”‚   â”œâ”€â”€ researcher.py
+    â”‚   â”œâ”€â”€ analyst.py
+    â”‚   â”œâ”€â”€ fact_checker.py
+    â”‚   â””â”€â”€ report_writer.py
+    â”œâ”€â”€ graphs/rgraph.py              # Nodes, edges, and conditional routing
+    â”œâ”€â”€ integrations/mcp_client.py    # External MCP connection
+    â”œâ”€â”€ prompts/system_prompts.py
+    â”œâ”€â”€ state/state.py               # Shared workflow state
+    â””â”€â”€ memory/store.py               # In-memory checkpoints
 ```
 
 Node functions live in `agents/`; the single graph file registers them and defines the path from start to finish. MCP tools receive an `mcp_` prefix to avoid collisions with built-in Deep Agents tools. Their session stays open throughout each research run.
@@ -134,4 +137,4 @@ Node functions live in `agents/`; the single graph file registers them and defin
 
 ## License
 
-[MIT](LICENSE) · Omar Shemis
+[MIT](LICENSE) Â· Omar Shemis
