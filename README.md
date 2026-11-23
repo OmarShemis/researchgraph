@@ -1,60 +1,137 @@
-![ResearchGraph — A question becomes a research workflow.](assets/header.svg)
-
-[← Omar’s portfolio](https://github.com/OmarShemis) · [Architecture](docs/architecture.md) · [MIT license](LICENSE)
+<div align="center">
 
 # ResearchGraph
 
-[![Tests](https://github.com/OmarShemis/researchgraph/actions/workflows/tests.yml/badge.svg)](https://github.com/OmarShemis/researchgraph/actions/workflows/tests.yml)
+**A local-first research assistant with a chat interface and a review-driven workflow.**
 
-A command-line multi-agent research workflow built with LangGraph and LangChain. A local Ollama model plans research, searches through Tavily, reviews the findings, and writes a report. A local stdio MCP server exposes SQLite notes tools to the researcher.
+[![Python](https://img.shields.io/badge/Python-3.14%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![LangGraph](https://img.shields.io/badge/Workflow-LangGraph-1C3C3C)](https://github.com/langchain-ai/langgraph)
+[![Streamlit](https://img.shields.io/badge/Chat-Streamlit-FF4B4B?logo=streamlit&logoColor=white)](https://streamlit.io/)
+[![MCP](https://img.shields.io/badge/Tools-MCP-222222)](https://modelcontextprotocol.io/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-## Workflow
+Ask a question. Gather evidence. Review the findings. Read the report.
 
-Planner -> Researcher -> Reviewer -> Writer. The reviewer may request another research pass, capped by `MAX_RESEARCH_ROUNDS` (default 2, maximum 5). Each follow-up receives the previous critique; accumulated findings reach the writer. Each question starts fresh workflow state.
-
-## Setup
-
-Requires Python 3.11+, uv, Ollama with a tool-capable model, and a Tavily API key.
-
-```powershell
-uv sync
-Copy-Item .env.example .env
-# Edit .env and set TAVILY_API_KEY.
-ollama pull qwen3.5:4b
-uv run researchgraph
-```
-
-With pip: `python -m pip install -r requirements.txt`, then `researchgraph`. You can also use `python -m researchgraph` after installation. The old `python src/main.py` entry point remains available.
-
-The `.env` in the current working directory is loaded first. The old `src/.env` is supported locally as a fallback, without overriding existing settings. Neither file is committed. The default model endpoint is `http://localhost:11434/v1`.
-
-## Notes MCP server
-
-The CLI launches its own server with the active Python interpreter, so it does not depend on a relative script path. Run it separately with `uv run researchgraph-notes` when connecting another MCP client. Tools list, add and delete local notes. This is a local stdio server, not a multi-user authenticated web service.
-
-Default database: `./data/notes.db`. Override using `RESEARCHGRAPH_NOTES_DB`; point it at an older database to keep using existing notes. No notes are migrated automatically. Model access to deletion is not a security boundary: use this learning project with disposable or backed-up notes.
-
-## Development
-
-```powershell
-uv run python -m unittest discover -s tests -v
-uv build
-```
-
-`src/researchgraph/`: `agents.py` builds the roles; `nodes.py` implements the async steps; `graph.py` defines bounded routing; `config.py` reads startup settings; `notes_db.py` stores notes; `notes_mcp.py` serves tools; `cli.py` manages the session.
-
-Uses LangChain's first-party `MCPAdapter` with FastMCP 4. The previous separate MCP adapter conflicted with MCP SDK v2. The new `langchain.mcp` API is currently beta; dependencies are constrained and locked in `uv.lock`.
-
-## Data and limitations
-
-Tavily receives search queries. Prompts are local only with the default local model endpoint. Enabling optional tracing may send prompts and outputs to the tracing provider. Secrets, local databases, editor files and the original screenshot are excluded from Git.
-
-This is a learning/portfolio project. Source URLs are requested from the model but are not independently verified. Reports can contain errors; review evidence before relying on them. Offline tests do not prove live model or search quality. Model request timeouts and workflow limits reduce runaway execution but do not guarantee successful research.
-
-## Architecture and verification
-
-[Architecture](docs/architecture.md) · [MIT licence](LICENSE). Unit tests and CI are reproducible with the commands above. Live API/model quality requires separate evaluation.
+</div>
 
 ---
 
-Built by [Omar Shemis](https://github.com/OmarShemis) · [Explore more projects](https://github.com/OmarShemis?tab=repositories)
+## Overview
+
+ResearchGraph connects a local OpenAI-compatible language model to your existing MCP server. A LangGraph workflow plans the research, gathers evidence through Deep Agents, analyzes the findings, reviews their completeness, and writes a Markdown report in a Streamlit chat interface.
+
+The workflow can return to research when evidence is insufficient, with a two-round limit to keep the process bounded.
+
+## Features
+
+- **Chat interface** with Markdown reports, session history, follow-up questions, and a new-chat button.
+- **Five focused roles**: supervisor, researcher, analyst, fact checker, and report writer.
+- **Conditional review loop** that requests additional research before writing the report.
+- **External MCP tools** discovered from your running server, without copying tool implementations into the project.
+- **Local model support** through an OpenAI-compatible Chat Completions endpoint.
+- **Workflow progress** showing completed stages while research runs.
+
+## Workflow
+
+```mermaid
+flowchart TD
+    Start([Start]) --> Supervisor[Supervisor: plan]
+    Supervisor --> Researcher[Researcher: gather evidence]
+    Researcher --> Analyst[Analyst: assess findings]
+    Analyst --> Checker[Fact checker: review evidence]
+    Checker --> Decision{Approved or two rounds reached?}
+    Decision -- No: research with feedback --> Researcher
+    Decision -- Yes --> Writer[Report writer]
+    Writer --> Finish([End])
+```
+
+The researcher uses Deep Agents with the connected MCP tools. The other roles call the local model directly. The fact checker evaluates the supplied findings and citations; it does **not** independently browse or guarantee factual accuracy. Unresolved gaps should be disclosed in the final report.
+
+## Quick start
+
+### 1. Install
+
+Requirements: **Python 3.14+**, **uv**, a running local model server, and a running Streamable HTTP MCP server.
+
+```powershell
+git clone https://github.com/OmarShemis/researchgraph.git
+cd researchgraph
+uv sync
+Copy-Item .env.example .env
+```
+
+For an existing checkout, keep your current `.env` rather than replacing it.
+
+### 2. Configure
+
+Edit `.env` to match your local services:
+
+```dotenv
+LOCAL_BASE_URL=http://localhost:1235/v1
+LOCAL_MODEL=google/gemma-4-e4b
+LOCAL_API_KEY=local
+MCP_URL=http://localhost:8000/mcp
+```
+
+| Variable | Purpose |
+| --- | --- |
+| `LOCAL_BASE_URL` | Your local OpenAI-compatible API endpoint, including `/v1`. |
+| `LOCAL_MODEL` | Exact model identifier served by that endpoint. Choose a model with tool-calling support. |
+| `LOCAL_API_KEY` | Authentication token if required; `local` is a placeholder for servers without authentication. |
+| `MCP_URL` | Streamable HTTP endpoint of your existing MCP server. |
+
+Start both services before opening the app. Credentials for tools such as Tavily belong in the MCP server's configuration. A cloud model API key is not required when using a local server without authentication.
+
+### 3. Launch
+
+```powershell
+uv run streamlit run streamlit_app.py
+```
+
+Open **http://localhost:8501**, enter a research question, and follow the stage updates. The report appears in the conversation when the workflow finishes. Follow-up questions include the previous chat as context; **New chat** clears that history.
+
+## Project structure
+
+```text
+researchgraph/
+├── streamlit_app.py                 # Chat UI and workflow execution
+├── .env.example                     # Local service configuration template
+├── pyproject.toml
+├── uv.lock
+└── src/researchgraph/
+    ├── config.py                    # Local model configuration
+    ├── agents/
+    │   ├── supervisor.py
+    │   ├── researcher.py
+    │   ├── analyst.py
+    │   ├── fact_checker.py
+    │   └── report_writer.py
+    ├── graphs/rgraph.py              # Nodes, edges, and conditional routing
+    ├── integrations/mcp_client.py    # External MCP connection
+    ├── prompts/system_prompts.py
+    ├── state/state.py               # Shared workflow state
+    └── memory/store.py               # In-memory checkpoints
+```
+
+Node functions live in `agents/`; the single graph file registers them and defines the path from start to finish. MCP tools receive an `mcp_` prefix to avoid collisions with built-in Deep Agents tools. Their session stays open throughout each research run.
+
+## Scope and limitations
+
+- Chat history lasts for the current Streamlit session. Checkpoints are in memory; each submitted question starts a fresh graph thread with prior conversation text supplied as context.
+- Research is limited to two total rounds. Reaching the limit does not mean that every claim has been verified.
+- Model tool-calling quality and the MCP server's available tools affect results. Blocked pages and missing credentials can prevent source access.
+- All discovered MCP tools are available to the researcher. Their permissions and side effects are controlled by your MCP server; the application is not a sandbox or a human-approval enforcement layer.
+- A local model does not imply offline research: web tools can contact external services.
+
+## Troubleshooting
+
+| Symptom | Check |
+| --- | --- |
+| Cannot connect to the model | Confirm the server is running and `LOCAL_BASE_URL` matches its port. |
+| Model not found | Set `LOCAL_MODEL` to an identifier returned by the server's `/v1/models` endpoint. |
+| MCP connection fails | Confirm the MCP server is running and its Streamable HTTP URL matches `MCP_URL`. |
+| Tool calls fail | Verify that the model supports tool calling and the MCP tools have their required credentials. |
+
+## License
+
+[MIT](LICENSE) · Omar Shemis
