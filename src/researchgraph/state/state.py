@@ -4,12 +4,9 @@ from typing import TypedDict
 class ResearchState(TypedDict, total=False):
     question: str
     plan: str
-    findings: list[dict]
-    research_gaps: list[str]
-    verified_findings: list[dict]
-    gaps: list[str]
-    approved: bool
+    findings: str
     analysis: str
     review: str
+    approved: bool
     rounds: int
     report: str

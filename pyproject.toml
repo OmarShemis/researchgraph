@@ -9,8 +9,6 @@ dependencies = [
     "langgraph>=1.2.24",
     "python-dotenv>=1.2.4",
     "streamlit>=1.67.0",
-    "pydantic>=2.14.4",
-    "langchain>=1.5.2",
 ]
 
 [build-system]
